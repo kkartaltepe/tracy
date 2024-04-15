@@ -5,27 +5,13 @@ include(cmake/version.cmake)
 
 project(Tracy LANGUAGES CXX VERSION ${TRACY_VERSION_STRING})
 
-if(${BUILD_SHARED_LIBS})
-	set(DEFAULT_STATIC OFF)
-else()
-	set(DEFAULT_STATIC ON)
-endif()
-
-option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
-
 find_package(Threads REQUIRED)
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
-if(TRACY_STATIC)
-	set(TRACY_VISIBILITY "STATIC")
-else()
-	set(TRACY_VISIBILITY "SHARED")
-endif()
-
 add_library(TracyClient ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
-target_include_directories(TracyClient SYSTEM PUBLIC
+target_include_directories(TracyClient INTERFACE PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(
@@ -83,13 +69,20 @@ set_option(TRACY_LIBUNWIND_BACKTRACE "Use libunwind backtracing where supported"
 set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution" OFF)
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF)
 
-if(NOT TRACY_STATIC)
+# if(NOT TRACY_STATIC)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
     target_compile_definitions(TracyClient PUBLIC TRACY_IMPORTS)
-endif()
+    target_compile_options(
+      TracyClient
+      PRIVATE -Wno-error=extra
+              -Wno-error=unused-parameter
+              -Wno-error=deprecated-declarations
+              -Wno-error=empty-body
+              )
+    # endif()
 
-include(CMakePackageConfigHelpers)
-include(GNUInstallDirs)
+    # include(CMakePackageConfigHelpers)
+    # include(GNUInstallDirs)
 
 set_target_properties(TracyClient PROPERTIES VERSION ${PROJECT_VERSION})
 
@@ -141,34 +134,4 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyUwp.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyYield.hpp)
 
-install(TARGETS TracyClient
-        EXPORT TracyConfig
-        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${tracy_includes}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
-install(FILES ${client_includes}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/client)
-install(FILES ${common_includes}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/common)
-install(EXPORT TracyConfig
-        NAMESPACE Tracy::
-        FILE TracyTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
-include(CMakePackageConfigHelpers)
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
-
-option(TRACY_CLIENT_PYTHON "Whether to build Tracy python client library" OFF)
-
-if(TRACY_CLIENT_PYTHON)
-    if(TRACY_STATIC)
-        message(FATAL_ERROR "Python-bindings require a shared client library")
-    endif()
-
-    add_subdirectory(python)
-endif()
+set_target_properties(TracyClient PROPERTIES FOLDER deps POSITION_INDEPENDENT_CODE TRUE)
