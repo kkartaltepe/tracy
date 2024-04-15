@@ -5905,7 +5905,8 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     }
 
     auto zone = ctx->query[ev.queryId];
-    assert( zone );
+    if(!zone) return; // zones may be missed from on-demand, ignore timestamps.
+    // assert( zone );
     ctx->query[ev.queryId] = nullptr;
 
     if( zone->GpuStart() < 0 )
