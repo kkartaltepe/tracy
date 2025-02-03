@@ -196,6 +196,16 @@ endif
 
 tracy_compile_args += tracy_common_args
 
+# Common warnings reported in tracy code when used as a subproject
+tracy_compile_args += [
+  '-Wno-unused-parameter',
+  '-Wno-unused-variable',
+  '-Wno-unused-function',
+  '-Wno-deprecated-declarations',
+  '-Wno-empty-body',
+  '-Wno-missing-field-initializers',
+  ]
+
 tracy_deps = [dependency('threads')] + tracy_public_deps
 
 tracy = library('tracy', tracy_src, tracy_header_files,
