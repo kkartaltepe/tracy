@@ -265,6 +265,23 @@ TRACY_API int32_t ___tracy_connected(void);
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 
 
+#define TRACY_LOCATION_NAME \
+        TracyConcat(__profile_source_location, TracyLine)
+
+#define TRACY_PROFILE_LOCATION                              \
+        static const struct ___tracy_source_location_data          \
+                TRACY_LOCATION_NAME = {NULL, __func__, TracyFile, \
+                                         (uint32_t)TracyLine, 0};
+#define TracyCAZone(ctx)                                               \
+	    TRACY_PROFILE_LOCATION                                    \
+        __attribute__((cleanup(___tracy_profile_end_auto)))             \
+	    TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TRACY_LOCATION_NAME, TRACY_CALLSTACK, true );
+
+static inline void ___tracy_profile_end_auto(TracyCZoneCtx *ctx)
+{
+	TracyCZoneEnd( *ctx );
+}
+
 TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int32_t secure );
 TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int32_t depth, int32_t secure );
 TRACY_API void ___tracy_emit_memory_free( const void* ptr, int32_t secure );
