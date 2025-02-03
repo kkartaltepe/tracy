@@ -5719,6 +5719,8 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     m_data.gpuCnt++;
 
     auto ctx = m_gpuCtxMap[ev.context].get();
+	if(!ctx)
+		return;
     assert( ctx );
 
     int64_t cpuTime;
@@ -5835,6 +5837,8 @@ void Worker::ProcessGpuZoneBeginAllocSrcLocCallstack( const QueueGpuZoneBeginLea
 void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
 {
     auto ctx = m_gpuCtxMap[ev.context];
+	if(!ctx)
+		return;
     assert( ctx );
 
     auto td = ctx->threadData.find( ev.thread );
@@ -5863,6 +5867,8 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
 void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
+	if(!ctx)
+		return;
     assert( ctx );
 
     int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
